@@ -56,5 +56,5 @@
       raw: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
-        echo "{{ lookup('file', playbook_dir + '/../ansible_keys/ansible_key.pub') }}" >> ~/.ssh/authorized_keys
+        echo "{{ lookup('file', playbook_dir + '/../files/ansible_key.pub') }}" >> ~/.ssh/authorized_keys
         chmod 600 ~/.ssh/authorized_keys
