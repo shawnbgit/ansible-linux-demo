@@ -1,0 +1,7 @@
+# SSH keys & private material
+*.pem
+*.key
+*.ppk
+*.pub
+files/*
+.idea/

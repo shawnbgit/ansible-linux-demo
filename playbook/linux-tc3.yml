@@ -1,0 +1,58 @@
+---
+- name: update and install tc3 runtime
+  hosts: controllers
+  become: yes
+  gather_facts: no
+
+  vars:
+    apt_lock_timeout: 300
+
+  tasks:
+    - name: update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        force_apt_get: yes
+        lock_timeout: "{{ apt_lock_timeout }}"
+      register: apt_update
+
+    - name: show apt update output
+      debug:
+        var: apt_update.stdout_lines
+      when: apt_update.stdout_lines is defined
+
+    - name: install or upgrade tc3 runtime
+      apt:
+        name: tc31-xar-um
+        state: latest
+        force_apt_get: yes
+        lock_timeout: "{{ apt_lock_timeout }}"
+      register: tc_install
+
+    - name: install summary
+      debug:
+        msg:
+          - "changed={{ tc_install.changed }}"
+          - "stdout:"
+          - "{{ (tc_install.stdout | default('')).splitlines() }}"
+          - "stderr:"
+          - "{{ (tc_install.stderr | default('')).splitlines() }}"
+          -
+    - name: stop nftables firewall
+      ansible.builtin.systemd:
+        name: nftables
+        state: stopped
+
+    - name: disable nftables at boot
+      ansible.builtin.systemd:
+        name: nftables
+        enabled: no
+
+    - name: reboot and wait
+      ansible.builtin.reboot:
+        msg: "reboot after disabling firewall"
+        reboot_timeout: 600
+        connect_timeout: 10
+        pre_reboot_delay: 3
+        post_reboot_delay: 10
+        test_command: "whoami"

@@ -1,0 +1,60 @@
+---
+- name: bootstrap hosts w/ ssh key
+  hosts: controllers
+  gather_facts: no
+
+  vars_prompt:
+    - name: beckhoff_email
+      prompt: "Enter your Beckhoff email"
+      private: no
+
+    - name: beckhoff_password
+      prompt: "Enter your Beckhoff password"
+      private: yes
+
+  tasks:
+    - name: generate ssh key pair locally
+      delegate_to: localhost
+      become: no
+      openssh_keypair:
+        path: "{{ playbook_dir }}/../files/ansible_key"
+        type: ed25519
+        force: no
+      run_once: true
+
+    - name: create apt auth directory
+      raw: mkdir -p /etc/apt/auth.conf.d
+      become: yes
+
+    - name: create Beckhoff apt authentication file
+      raw: |
+        cat > /etc/apt/auth.conf.d/bhf.conf << 'EOF'
+        machine deb.beckhoff.com
+        login {{ beckhoff_email }}
+        password {{ beckhoff_password }}
+
+        machine deb-mirror.beckhoff.com
+        login {{ beckhoff_email }}
+        password {{ beckhoff_password }}
+        EOF
+        chmod 600 /etc/apt/auth.conf.d/bhf.conf
+      become: yes
+
+    - name: add Beckhoff unstable repository
+      raw: |
+        cat > /etc/apt/sources.list.d/bhf.list << 'EOF'
+        deb [signed-by=/usr/share/keyrings/bhf.asc] https://deb.beckhoff.com/debian trixie-stable main
+        EOF
+        chmod 644 /etc/apt/sources.list.d/bhf.list
+      become: yes
+
+    - name: install python
+      raw: apt-get update && apt-get install -y python3
+      become: yes
+
+    - name: copy ssh public key
+      raw: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        echo "{{ lookup('file', playbook_dir + '/../ansible_keys/ansible_key.pub') }}" >> ~/.ssh/authorized_keys
+        chmod 600 ~/.ssh/authorized_keys
