@@ -48,7 +48,7 @@
         name: nftables
         enabled: no
 
-    - name: Write static network config for end0
+    - name: write static network config for end0
       ansible.builtin.copy:
         dest: /etc/systemd/network/10-end0-static.network
         owner: root
@@ -63,11 +63,12 @@
           Gateway=192.168.2.1
           DNS=192.168.2.1 8.8.8.8
 
-    - name: reboot and wait
-      ansible.builtin.reboot:
-        msg: "reboot after disabling firewall"
-        reboot_timeout: 600
-        connect_timeout: 10
-        pre_reboot_delay: 3
-        post_reboot_delay: 10
-        test_command: "whoami"
+    - name: reboot fire & forget, godspeed 🫡
+      ansible.builtin.shell: |
+        nohup sh -c 'sleep 2 && systemctl reboot' >/dev/null 2>&1 &
+      async: 1
+      poll: 0
+      ignore_errors: true
+
+    - name: stop running tasks on this host
+      meta: end_host

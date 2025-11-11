@@ -8,4 +8,5 @@
 6. apt update
 7. install twincat runtime
 8. turn off firewall
-9. reboot
+9. set static ip address
+10. reboot
